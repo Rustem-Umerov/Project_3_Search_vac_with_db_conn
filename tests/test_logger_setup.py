@@ -71,7 +71,7 @@ def test_get_logger_with_file_handler(temp_logs_dir: Path) -> None:
     fake_logs_dir = temp_logs_dir / "logs"
     fake_logs_dir.mkdir()
 
-    with patch("job_search.utils.logger_setup.Path") as mock_path:
+    with patch("src.logger_setup.Path") as mock_path:
         # Настраиваем Path(__file__).resolve().parent.parent / "logs"
         mock_path.return_value.resolve.return_value.parent.parent.__truediv__.return_value = fake_logs_dir
 
