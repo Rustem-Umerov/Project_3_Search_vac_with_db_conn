@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict
+from typing import Optional
 
 import psycopg2
 from psycopg2.extensions import connection, cursor
@@ -6,18 +6,9 @@ from psycopg2.sql import SQL, Identifier
 
 from src.config import settings
 from src.logger_setup import get_logger
+from src.types_db_params import DbParams
 
 logger = get_logger(__name__)
-
-
-class DbParams(TypedDict):
-    """Строго типизированный словарь с параметрами подключения к PostgreSQL."""
-
-    dbname: str
-    user: str
-    password: str
-    host: str
-    port: int
 
 
 def connect_to_server() -> tuple[connection, cursor]:
