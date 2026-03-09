@@ -4,11 +4,26 @@ import psycopg2
 from psycopg2.extensions import connection, cursor
 from psycopg2.sql import SQL, Identifier
 
+from src.api_client import get_company, get_company_vacancies
 from src.config import settings
 from src.logger_setup import get_logger
 from src.types_db_params import DbParams
 
 logger = get_logger(__name__)
+
+
+EMPLOYERS_ID = [
+    "2477650",  # ОАО Красный Октябрь
+    "1740",  # Яндекс
+    "745654",  # Литрес
+    "87021",  # RWB (Wildberries & Russ)
+    "2180",  # Ozon
+    "3529",  # СБЕР
+    "1025275",  # Сеть магазинов цифровой и бытовой техники DNS
+    "78638",  # Т-Банк
+    "4181",  # Банк ВТБ (ПАО)
+    "080",  # Альфа-Банк
+]
 
 
 def connect_to_server() -> tuple[connection, cursor]:
@@ -156,9 +171,11 @@ def create_tables(conn: connection) -> None:
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS companies(
-                    id SERIAL PRIMARY KEY,
+                    id TEXT PRIMARY KEY,
                     name TEXT,
-                    url TEXT,
+                    vacancies_url TEXT,
+                    alternate_url TEXT,
+                    open_vacancies INTEGER,
                     description TEXT
                 )
             """
@@ -169,12 +186,13 @@ def create_tables(conn: connection) -> None:
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS vacancies(
-                    id SERIAL PRIMARY KEY,
-                    company_id INTEGER REFERENCES companies(id),
+                    id TEXT PRIMARY KEY,
+                    company_id TEXT REFERENCES companies(id),
                     title TEXT,
                     salary_from INTEGER,
                     salary_to INTEGER,
-                    url TEXT
+                    url TEXT,
+                    alternate_url TEXT
                 )
             """
             )
@@ -219,3 +237,114 @@ def init_database(dbname: str = "hh_project") -> None:
     conn.close()
 
     logger.info("Инициализация базы данных завершена")
+
+
+def insert_company(conn: connection, company: dict) -> None:
+    """
+    Заполняет таблицу 'companies' данными о, переданной в функцию, компании.
+
+    :param conn: Активное соединение с базой данных.
+    :param company: Дынные о компании
+    :raises Exception: Любая ошибка при заполнении таблицы.
+    """
+
+    try:
+        company_id = company["id"]
+        name = company["name"]
+        vacancies_url = company["vacancies_url"]
+        alternate_url = company["alternate_url"]
+        open_vacancies = company["open_vacancies"]
+        description = company.get("description")
+
+        with conn.cursor() as cur:
+
+            cur.execute(
+                """
+                INSERT INTO companies (id, name, vacancies_url, alternate_url, open_vacancies, description)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    vacancies_url = EXCLUDED.vacancies_url,
+                    alternate_url = EXCLUDED.alternate_url,
+                    open_vacancies = EXCLUDED.open_vacancies,
+                    description = EXCLUDED.description
+                """,
+                (company_id, name, vacancies_url, alternate_url, open_vacancies, description),
+            )
+
+        conn.commit()
+
+    except Exception as e:
+        logger.exception("Ошибка при заполнении таблицы (companies) данными: %s", e)
+        raise
+
+
+def insert_vacancies(conn: connection, vacancies: list[dict]) -> None:
+    """
+    Заполняет таблицу 'vacancies' данными о, переданном в функцию, списке компаний.
+
+    :param conn: Активное соединение с базой данных.
+    :param vacancies: Список с дынными о компаниях
+    :raises Exception: Любая ошибка при заполнении таблицы.
+    """
+
+    try:
+        with conn.cursor() as cur:
+
+            for vac in vacancies:
+                vacancy_id = vac["id"]
+                company_id = vac["employer"]["id"]
+                title = vac["name"]
+
+                salary = vac.get("salary")  # получаю, для поиска salary_from и salary_to
+                salary_from = salary.get("from") if salary else None
+                salary_to = salary.get("to") if salary else None
+
+                url = vac["url"]
+                alternate_url = vac["alternate_url"]
+
+                cur.execute(
+                    """
+                    INSERT INTO vacancies (id, company_id, title, salary_from, salary_to, url, alternate_url)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        salary_from = EXCLUDED.salary_from,
+                        salary_to = EXCLUDED.salary_to,
+                        url = EXCLUDED.url,
+                        alternate_url = EXCLUDED.alternate_url
+                    """,
+                    (vacancy_id, company_id, title, salary_from, salary_to, url, alternate_url),
+                )
+
+        conn.commit()
+
+    except Exception as e:
+        logger.exception("Ошибка при заполнении таблицы (vacancies) данными: %s", e)
+        raise
+
+
+def load_data(conn: connection) -> None:
+    """
+    Функция получает данные о компании, список вакансии от компании и записывает все данные в таблицу.
+
+    :param conn: Активное соединение с базой данных.
+    """
+
+    for company_id in EMPLOYERS_ID:
+        logger.info("Начинаем загрузку данных для компании %s", company_id)
+
+        # Получаю данные о компании
+        company_data = get_company(company_id)
+
+        # Записываю данные компании в таблицу
+        insert_company(conn, company_data)
+
+        # Получаю список вакансии
+        company_vacancies = get_company_vacancies(company_id)
+        logger.info("Получено %s вакансий для компании %s", len(company_vacancies), company_id)
+
+        # Записываю вакансии в таблицу
+        insert_vacancies(conn, company_vacancies)
+
+        logger.info("Загрузка данных для компании %s завершена", company_id)

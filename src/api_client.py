@@ -10,19 +10,6 @@ T = TypeVar("T")
 
 logger = get_logger(__name__)
 
-EMPLOYERS_ID = [
-    "2477650",  # ОАО Красный Октябрь
-    "1740",  # Яндекс
-    "745654",  # Литрес
-    "87021",  # RWB (Wildberries & Russ)
-    "2180",  # Ozon
-    "3529",  # СБЕР
-    "1025275",  # Сеть магазинов цифровой и бытовой техники DNS
-    "78638",  # Т-Банк
-    "4181",  # Банк ВТБ (ПАО)
-    "080",  # Альфа-Банк
-]
-
 BASE_URL = "https://api.hh.ru"
 
 session = requests.Session()
@@ -111,12 +98,14 @@ def validate_company_response(data: dict) -> None:
     vacancies_url: str = require_key(data, "vacancies_url")
     alternate_url: str = require_key(data, "alternate_url")
     open_vacancies: int = require_key(data, "open_vacancies")
+    description: str = require_key(data, "description")
 
     string_fields = {
         "id": company_id,
         "name": name,
         "vacancies_url": vacancies_url,
         "alternate_url": alternate_url,
+        "description": description,
     }
     # Проверка, что у значений правильный тип
     for key, value in string_fields.items():
