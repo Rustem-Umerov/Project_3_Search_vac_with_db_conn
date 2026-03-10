@@ -67,7 +67,7 @@ class DBManager:
     def get_companies_and_vacancies_count(self) -> list[dict]:
         """
         Делает SQL запрос для таблиц companies и vacancies
-        и возвращает список словарей, где ключ - название компании, а значение - количество вакансии.
+        и возвращает список словарей, на примере: {"name": "Azon", "vacancy_count": 10}.
         """
 
         self.cur.execute(
