@@ -121,7 +121,7 @@ def run_interface(db_manager: DBManager) -> None:
             break
 
 
-def _checking_list_data(data: list, method_name: str) -> bool:
+def _checking_list_data(data: list, method_name: str, empty_message: str) -> bool:
     """
     Функция проверяет, что список с данными.
     Проверка:
@@ -131,6 +131,7 @@ def _checking_list_data(data: list, method_name: str) -> bool:
 
     :param data: Список с данными
     :param method_name: Название метода
+    :param empty_message: Сообщение для пользователя, если список пустой
     :return: True/False
     """
 
@@ -146,7 +147,7 @@ def _checking_list_data(data: list, method_name: str) -> bool:
 
     if not data:
         logger.warning("%s вернул пустой список", method_name)
-        print("Данные о компаниях отсутствуют.")
+        print(empty_message)
         return False
 
     return True
@@ -161,7 +162,11 @@ def handle_show_companies(db_manager: DBManager) -> None:
     logger.info("Выполняется пункт меню: показать компании и количество вакансий")
     result = db_manager.get_companies_and_vacancies_count()
 
-    if not _checking_list_data(result, "get_companies_and_vacancies_count"):
+    if not _checking_list_data(
+        result,
+        "get_companies_and_vacancies_count",
+        "Данные о компаниях отсутствуют.",
+    ):
         return None
 
     logger.info("Получено %s компаний", len(result))
@@ -175,11 +180,12 @@ def handle_show_vacancies(*, data: list[dict], method_name: str, menu_title: str
     Обработчик пункта меню: показать все вакансии и показать вакансии с зарплатой выше средней.
     :param data: Список с вакансиями
     :param method_name: Название метод для запроса к sql
+    :param menu_title: Описание метода
     """
 
     logger.info("Выполняется пункт меню: %s", menu_title)
 
-    if not _checking_list_data(data, method_name):
+    if not _checking_list_data(data, method_name, "Данные о вакансиях отсутствуют."):
         return None
 
     logger.info("Получено %s вакансии", len(data))
