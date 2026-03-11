@@ -109,6 +109,7 @@ def run_interface(db_manager: DBManager) -> None:
 
         elif user_input == 5:
             keyword = input("Введите ключевое слово для поиска вакансии -----> ")
+            logger.info("Пользователь ищет вакансии по ключевому слову: %s", keyword)
             handle_show_vacancies(
                 data=db_manager.get_vacancies_with_keyword(keyword),
                 method_name=f"get_vacancies_with_keyword('{keyword}')",
@@ -150,6 +151,7 @@ def _checking_list_data(data: list, method_name: str, empty_message: str) -> boo
         print(empty_message)
         return False
 
+    logger.debug("%s: данные прошли проверку", method_name)
     return True
 
 
@@ -172,6 +174,7 @@ def handle_show_companies(db_manager: DBManager) -> None:
     logger.info("Получено %s компаний", len(result))
 
     for d in result:
+        logger.debug("Компания: %s, количество вакансий: %s", d["name"], d["vacancy_count"])
         print(f"Название компания: {d['name']}, количество вакансии: {d['vacancy_count']}")
 
 
@@ -219,6 +222,8 @@ def handle_show_avg_salary(db_manager: DBManager) -> None:
     result = db_manager.get_avg_salary()
 
     if result is None:
+        logger.warning("Данные о заработной плате отсутствуют, поэтому расчет средней заработной платы не возможен.")
         print("Данные о заработной плате отсутствуют, поэтому расчет средней заработной платы не возможен.")
     else:
+        logger.info("Средняя заработная плата по всем вакансиям: %s", result)
         print(f"Средняя заработная плата по всем вакансиям: {result}")
