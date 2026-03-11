@@ -26,12 +26,12 @@ EMPLOYERS_ID = [
 ]
 
 
-def connect_to_server() -> tuple[connection, cursor]:
+def connect_to_server() -> connection:
     """
     Подключение к системной базе PostgreSQL (postgres) для административных операций.
 
     :raises Exception: Любая ошибка при создании базы данных.
-    :return: (connection, cursor)
+    :return: Connection
     """
 
     try:
@@ -52,10 +52,9 @@ def connect_to_server() -> tuple[connection, cursor]:
         )
 
         conn = psycopg2.connect(**params)
-        cur = conn.cursor()
 
         logger.info("Успешное подключение к PostgreSQL (postgres)")
-        return conn, cur
+        return conn
 
     except Exception as e:
         logger.exception("Ошибка подключения к PostgreSQL: %s", e)
@@ -101,8 +100,9 @@ def create_database(dbname: str) -> None:
 
     try:
         # Подключаемся к системной базе postgres
-        conn, cur = connect_to_server()
+        conn = connect_to_server()
         conn.autocommit = True
+        cur = conn.cursor()
 
         logger.info("Создаём базу %s", dbname)
         cur.execute(SQL("CREATE DATABASE {}").format(Identifier(dbname)))
@@ -119,13 +119,13 @@ def create_database(dbname: str) -> None:
             conn.close()
 
 
-def connect_to_db(dbname: str) -> tuple[connection, cursor]:
+def connect_to_db(dbname: str) -> connection:
     """
     Подключение к базе данных dbname.
 
     :param dbname: Название базы данных
     :raises Exception: Любая ошибка при подключении.
-    :return: (connection, cursor)
+    :return: Connection
     """
 
     try:
@@ -146,10 +146,9 @@ def connect_to_db(dbname: str) -> tuple[connection, cursor]:
         )
 
         conn = psycopg2.connect(**params)
-        cur = conn.cursor()
 
         logger.info("Успешное подключение к базе %s", dbname)
-        return conn, cur
+        return conn
 
     except Exception as e:
         logger.exception("Ошибка подключения к базе %s: %s", dbname, e)
@@ -216,7 +215,8 @@ def init_database(dbname: str = "hh_project") -> None:
     """
 
     # 1. Подключаемся к postgres
-    conn, cur = connect_to_server()
+    conn = connect_to_server()
+    cur = conn.cursor()
 
     # 2. Проверяем/создаём базу
     if not database_exists(cur=cur, dbname=dbname):
@@ -227,13 +227,12 @@ def init_database(dbname: str = "hh_project") -> None:
     conn.close()
 
     # 4. Подключаемся к новой базе
-    conn, cur = connect_to_db(dbname)
+    conn = connect_to_db(dbname)
 
     # 5. Создаём таблицы
     create_tables(conn)
 
     # 6. Закрываем соединение к новой базе
-    cur.close()
     conn.close()
 
     logger.info("Инициализация базы данных завершена")
