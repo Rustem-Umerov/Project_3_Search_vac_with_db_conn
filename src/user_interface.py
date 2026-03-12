@@ -192,7 +192,12 @@ def handle_show_companies(db_manager: DBManager) -> None:
 
     for d in result:
         logger.debug("Компания: %s, количество вакансий: %s", d["name"], d["vacancy_count"])
-        print(f"Название компания: {d['name']}, количество вакансии: {d['vacancy_count']}")
+
+        name_company_str = f"Название компания: {d['name']}"
+        left = name_company_str.ljust(90)
+        right = f"| Количество вакансии: {d['vacancy_count']}"
+        print(left + right)
+        print("-" * 150)
 
 
 def paginate_vacancies(*, data: list[dict], method_name: str, menu_title: str) -> None:
