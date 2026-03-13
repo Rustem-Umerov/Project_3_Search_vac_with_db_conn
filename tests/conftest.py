@@ -34,3 +34,31 @@ def mock_response() -> MagicMock:
     resp = MagicMock()
     resp.raise_for_status = MagicMock()
     return resp
+
+
+@pytest.fixture
+def mock_connect() -> Generator[MagicMock, None, None]:
+    """
+    Мок psycopg2.connect, возвращающий мок‑соединение.
+    """
+    with patch("src.db_creator.psycopg2.connect") as mock_conn:
+        conn = MagicMock()
+        conn.cursor.return_value = MagicMock()
+        mock_conn.return_value = conn
+        yield mock_conn
+
+
+@pytest.fixture
+def mock_connection() -> MagicMock:
+    """
+    Мок‑соединение с БД.
+    """
+    conn = MagicMock()
+    cursor = MagicMock()
+
+    # cursor.__enter__ должен вернуть сам cursor
+    cursor.__enter__.return_value = cursor
+    cursor.__exit__.return_value = False
+
+    conn.cursor.return_value = cursor
+    return conn
