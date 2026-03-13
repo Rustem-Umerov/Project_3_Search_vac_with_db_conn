@@ -294,7 +294,9 @@ def next_or_prev_page(*, start: int, page_size: int, total: int) -> Optional[int
                 logger.debug("Переход на следующую страницу: start=%s", new_start)
                 return new_start
             else:
-                print("Вы на последней странице")
+                print("-" * 50)
+                print(f"!!!{' ' * 10}Вы на последней странице")
+                print("-" * 50)
                 logger.info("Попытка перейти на страницу дальше, будучи на последней странице")
                 continue
 
@@ -305,7 +307,9 @@ def next_or_prev_page(*, start: int, page_size: int, total: int) -> Optional[int
                 logger.debug("Переход на предыдущую страницу: start=%s", new_start)
                 return new_start
             else:
-                print("Вы на первой странице")
+                print("-" * 50)
+                print(f"!!!{' ' * 10}Вы на первой странице")
+                print("-" * 50)
                 logger.info("Попытка перейти на страницу назад, будучи на первой страницей")
                 continue
 
