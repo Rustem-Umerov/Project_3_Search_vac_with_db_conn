@@ -4,6 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.db_manager import DBManager
+
 
 @pytest.fixture
 def temp_logs_dir(tmp_path: Path) -> Path:
@@ -37,13 +39,15 @@ def mock_response() -> MagicMock:
 
 
 @pytest.fixture
-def mock_connect() -> Generator[MagicMock, None, None]:
-    """
-    Мок psycopg2.connect, возвращающий мок‑соединение.
-    """
+def mock_connect_db_creator() -> Generator[MagicMock, None, None]:
     with patch("src.db_creator.psycopg2.connect") as mock_conn:
         conn = MagicMock()
-        conn.cursor.return_value = MagicMock()
+        cursor = MagicMock()
+
+        cursor.__enter__.return_value = cursor
+        cursor.__exit__.return_value = False
+
+        conn.cursor.return_value = cursor
         mock_conn.return_value = conn
         yield mock_conn
 
@@ -62,3 +66,24 @@ def mock_connection() -> MagicMock:
 
     conn.cursor.return_value = cursor
     return conn
+
+
+@pytest.fixture
+def mock_connect_db_manager() -> Generator[MagicMock, None, None]:
+    """
+    Мок psycopg2.connect, возвращающий мок‑соединение.
+    """
+    with patch("src.db_manager.psycopg2.connect") as mock_conn:
+        conn = MagicMock()
+        cursor = MagicMock()
+        conn.cursor.return_value = cursor
+        mock_conn.return_value = conn
+        yield mock_conn
+
+
+@pytest.fixture
+def db(mock_connect_db_manager: MagicMock) -> DBManager:
+    """
+    Возвращает экземпляр DBManager с замоканным подключением.
+    """
+    return DBManager()
